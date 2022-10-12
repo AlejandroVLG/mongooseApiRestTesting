@@ -33,14 +33,16 @@ describe('Pruebas sobre la Api de trips', () => {
     describe('POST /api/trips', () => {
 
         const newTrip = {
-            name: 'test trips',
+            name: 'test trip',
             destination: 'Berlin',
             category: 'familiar',
             start_date: '2022-06-20'
         };
 
+        const wrongTrip = { nombre: 'test trip' };
+
         afterAll(async () => {
-            await Trip.deleteMany({ name: 'test trips' });
+            await Trip.deleteMany({ name: 'test trip' });
         });
 
         it('La ruta funcione', async () => {
@@ -55,6 +57,47 @@ describe('Pruebas sobre la Api de trips', () => {
 
             expect(response.body._id).toBeDefined();
             expect(response.body.name).toBe(newTrip.name);
+        });
+
+        it('Error en la inserción', async () => {
+            const response = await request(app).post('/api/trips').send(wrongTrip);
+
+            expect(response.status).toBe(500);
+            expect(response.body.error).toBeDefined();
+        });
+    });
+
+    describe('PUT /api/trips', () => {
+
+        let trip;
+
+        beforeEach(async () => {
+            trip = await Trip.create({
+                name: 'test trip',
+                destination: 'Berlin',
+                category: 'amigos',
+                start_date: '2022-06-07'
+            })
+        });
+
+        afterEach(async () => {
+            await Trip.findByIdAndDelete(trip._id);
+        });
+
+        it('La ruta funciona', async () => {
+            const response = await request(app).put(`/api/trips/${trip._id}`).send(
+                { name: 'trip updated' }
+            );
+            expect(response.status).toBe(200);
+            expect(response.header['content-type']).toContain('json')
+        });
+
+        it('Se actualiza correctamente', async () => {
+            const response = await request(app).put(`/api/trips/${trip._id}`).send(
+                { name: 'trip updated' }
+            );
+            expect(response.body.name).toBe('trip updated');
+            expect(response.body._id).toBeDefined();
         })
     });
 });
